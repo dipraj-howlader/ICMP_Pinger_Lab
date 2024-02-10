@@ -1,10 +1,11 @@
+import tkinter as tk
+from tkinter import scrolledtext
 from socket import *
 import os
 import sys
 import struct
 import time
 import select
-
 
 ICMP_ECHO_REQUEST = 8
 
@@ -83,8 +84,8 @@ def doOnePing(destAddr, timeout):
 
 def ping(host, timeout=1):
     dest = gethostbyname(host)
-    print(f"Pinging {host} [{dest}] with 32 bytes of data:")
-    print("")
+    result_text.delete(1.0, tk.END)  # Clear previous results
+    result_text.insert(tk.END, f"Pinging {host} [{dest}] with 32 bytes of data:\n\n")
 
     sent = 0
     received = 0
@@ -99,19 +100,44 @@ def ping(host, timeout=1):
 
         if isinstance(round_trip_time, str):
             lost += 1
+            result_text.insert(tk.END, f"Request timed out.\n")
         else:
             received += 1
             total_time += round_trip_time
             min_time = min(min_time, round_trip_time)
             max_time = max(max_time, round_trip_time)
+            result_text.insert(tk.END, f"Reply from {dest}: bytes=32 time={int(round_trip_time)}ms TTL=57\n")
 
-        print(f"Reply from {dest}: bytes=32 time={int(round_trip_time)}ms TTL=57")
         time.sleep(1)
 
-    print("\nPing statistics for", dest)
-    print(f"    Packets: Sent = {sent}, Received = {received}, Lost = {lost} ({int((lost/sent)*100)}% loss),")
-    print("Approximate round trip times in milli-seconds:")
-    print(f"    Minimum = {int(min_time)}ms, Maximum = {int(max_time)}ms, Average = {int((total_time/received))}ms")
+    result_text.insert(tk.END, "\nPing statistics for " + dest + "\n")
+    result_text.insert(tk.END, f"    Packets: Sent = {sent}, Received = {received}, Lost = {lost} ({int((lost/sent)*100)}% loss),\n")
+    result_text.insert(tk.END, "Approximate round trip times in milli-seconds:\n")
+    result_text.insert(tk.END, f"    Minimum = {int(min_time)}ms, Maximum = {int(max_time)}ms, Average = {int((total_time/received))}ms\n")
 
-user_input = input("Enter the IP address or domain to ping: ")
-ping(user_input)
+def submit():
+    host = entry.get()
+    ping(host)
+
+# Creating the Tkinter window
+root = tk.Tk()
+root.title("Ping Tool")
+
+# Adding a label
+label = tk.Label(root, text="Enter IP address or domain name:")
+label.pack()
+
+# Adding an entry widget
+entry = tk.Entry(root, width=50)
+entry.pack()
+
+# Adding a submit button
+submit_button = tk.Button(root, text="Ping", command=submit)
+submit_button.pack()
+
+# Adding a scrolled text widget to display results
+result_text = scrolledtext.ScrolledText(root, width=80, height=20)
+result_text.pack()
+
+# Running the Tkinter event loop
+root.mainloop()
